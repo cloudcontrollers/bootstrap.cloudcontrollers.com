@@ -6,7 +6,18 @@ yes|add-apt-repository ppa:guilhem-fr/swftools
 yes|add-apt-repository ppa:webupd8team/java
 apt-get -y -qq update
 echo oracle-java7-installer shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections
-DEBIAN_FRONTEND=noninteractive apt-get -y -qq -o Dpkg::Options::='--force-confdef'  install lynx-cur mdadm subversion apache2-mpm-worker oracle-java7-installer python-software-properties ffmpeg imagemagick swftools ttf-mscorefonts-installer libreoffice libtcnative-1 tomcat7 postgresql
+DEBIAN_FRONTEND=noninteractive apt-get -y -qq -o Dpkg::Options::='--force-confdef'  install lynx-cur mdadm subversion apache2-mpm-worker oracle-java7-installer python-software-properties ffmpeg imagemagick swftools ttf-mscorefonts-installer libreoffice libtcnative-1 libpostgresql-java tomcat7 postgresql
+
+echo "$(date) Setting up postgresql"
+cd /usr/share/tomcat7/lib
+wget http://jdbc.postgresql.org/download/postgresql-9.1-901.jdbc3.jar
+
+echo "$(date) relocating postgresql data to persistent ebs volume"
+service postgresql stop
+cp -pr /var/lib/postgresql/* /opt/data2/var/lib/postgresql/
+chown -R postgres:postgres /opt/data2/var/lib/postgresql/
+rm -rf /var/lib/postgresql
+ln -s /opt/data2/var/lib/postgresql /var/lib/postgresql
 
 echo "$(date) Setting up alfresco DB in postgres"
 echo "CREATE ROLE alfresco LOGIN ENCRYPTED PASSWORD 'alfresco';" | sudo -u postgres psql
@@ -110,18 +121,9 @@ echo "$(date) passwords setup complete- written to /home/ubuntu/passwords"
 chmod +x /etc/rc.local
 update-rc.d -f rc.local remove
 update-rc.d rc.local defaults 99
-#
+
 echo "$(date) updating all packages and kernel and rebooting system"
 DEBIAN_FRONTEND=noninteractive apt-get -y -qq -o Dpkg::Options::='--force-confdef' dist-upgrade
-#
-echo "$(date) relocating postgresql data to persistent ebs volume"
-service postgresql stop
-cp -pr /var/lib/postgresql/* /opt/data2/var/lib/postgresql/
-chown -R postgres:postgres /opt/data2/var/lib/postgresql/
-rm -rf /var/lib/postgresql
-ln -s /opt/data2/var/lib/postgresql /var/lib/postgresql
-#s3cmd --config /root/.s3cfg get --force --no-progress s3://$S3_BUCKET/$SERVER/$ENVIRONMENT/etc/apparmor.d/usr.sbin.postgresqld  /etc/apparmor.d/usr.sbin.postgresqld
-#s3cmd --config /root/.s3cfg get --force --no-progress s3://$S3_BUCKET/$SERVER/$ENVIRONMENT/etc/postgresql/my.cnf.$INSTANCE_TYPE  /etc/postgresql/my.cnf
 
 echo "$(date) incrementing the public AMI launch count"
 s3cmd --config /root/.s3cfg get --recursive --force --no-progress s3://$S3_BUCKET/shared/etc/lynx-cur  /etc/
