@@ -1,0 +1,23 @@
+ProxyPass /alfresco ajp://#ip~up#:8009/alfresco
+ProxyPassReverse /alfresco ajp://#ip~up#:8009/alfresco
+
+<Proxy /alfresco>
+  Order deny,allow
+  Allow from all
+</Proxy>
+
+ProxyPass /share ajp://#ip~up#:8009/share
+ProxyPassReverse /share ajp://#ip~up#:8009/share
+
+<Proxy /share>
+  Order deny,allow
+  Allow from all
+</Proxy>
+
+ProxyPass /mobile ajp://#ip~up#:8009/mobile
+ProxyPassReverse /mobile ajp://#ip~up#:8009/mobile
+
+<Proxy /mobile>
+  Order deny,allow
+  Allow from all
+</Proxy>

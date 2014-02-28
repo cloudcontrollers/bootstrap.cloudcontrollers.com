@@ -1,0 +1,8 @@
+Name: Ec2DescribeSnapshotsParse
+Description: Assist the firstrun-create-ebs-from-snapshot-and-mount.sh
+Author:  Michael Mell
+Date: October 17, 2010
+License: MIT
+Install: 
+  place base.rb in 
+    [/usr/bin/env ruby] site_ruby/VERSION/ec2-describe-snapshots-parse/base.rb

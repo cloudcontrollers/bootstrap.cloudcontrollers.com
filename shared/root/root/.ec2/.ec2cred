@@ -1,0 +1,3 @@
+CERT=/root/.ec2/.cert
+PRIVKEY=/root/.ec2/.key
+AWSACCOUNTID=

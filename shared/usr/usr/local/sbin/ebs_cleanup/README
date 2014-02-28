@@ -1,0 +1,30 @@
+Snapshot and Volume Cleanup
+
+You will be surprised how quickly a buy auto-scaling site can reach the maximum number of EBS volumes for a region (5,000) and snapshots of these volumes (10,000). Especially if your site front-end web servers create web root EBS volumes on the fly as they launch. Over time, these stray volumes add up and are unnecessary to keep. Similarly, several services rely on ebs voumes that change over time and are usually "snapshot-ed" for disaster. There is a snapshot limit on accounts as well.
+
+Mike Mell of Cloud Controllers has created a set of cleanup scripts which can be run from any workstation or EC2 server using x.509 certificate/key pairs for an IAM account that has "delete volume" and "delete snapshot" permissions (you can also use the master account certificates, but it is not a good idea to leave these keys on machines in practice). For most sites, the delete_volumes.rb script is the one to use- see description on these scripts below.
+
+Here are the steps to take:
+
+    * Follow these instructions to setup your workstation for administering AWS services: https://wiki.cloudcontrollers.com/AWS_Best_Practices/Dev_Tools_Setup
+    * Install ruby1.9 and rubygems1.9 on the machine you will be working with:
+          o OS X: http://rubyosx.rubyforge.org/
+          o Windows: http://rubyinstaller.org/
+          o Ubuntu: run apt-get install ruby1.9 rubygems1.9
+          o Other useful info for all platforms: http://www.ruby-lang.org/en/downloads/
+    * download the files locate din s3://bootstrap.cloudcontrollers.com/shared/usr/local/ebs_cleanup to a directory on your machine you will be running the scripts from.
+    * run the scripts
+
+Remember that the scripts are applied to whatever region you specify in your environment variable file (see wiki article above).
+
+Here is a brief description of each script:
+
+    * delete_all_snapshots.rb: actually, it does not delete all snapshots. Could be called "delete_all_snapshots_except_one_per_volume.rb". This is a great script for cleaning up and starting over! It simply goes through your list of snapshots and removes all but the latest snapshot for each one it finds. What I like about this script:
+          o it leverages a key feature of EBS snapshot storage: when snapshots are deleted, the EBS snspashot system automatically reconfigures the number of stored blocks associated with the existing snapshots, so that the full volume is restoreable to it's state as of the remaining snapshot's time stamp.
+          o when volumes for which hourly snapshots tasks are created in Ylastic change, it is sometimes difficul to manage the old set of snapshots- the list can be huge. This shrinks the list to a manageable size, without chnaging the Ylastic snapshot schedule.
+          o snapshots associated with AMIs will not be deleted
+
+    * delete_snapshots_by_vol.rb: if you know the volume that a group of snapshots where created from, you can specify it and delete only those snapshots
+    * delete_volumes.rb: extremely useful, but powerful. If you have volumes you wish to preserve you must attach them to running or "stopped" instances, otherwise the volume will be deleted, along with all of the snapshots associated with the volume.
+
+

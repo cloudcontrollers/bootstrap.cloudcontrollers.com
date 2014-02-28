@@ -1,0 +1,70 @@
+#!/bin/bash
+#
+. /root/.bashrc_for_ec2
+LOGFILE="/var/log/rc-local.log"
+#exec > >(tee /var/log/rc-local.log|logger -t rc-local -s 2>/dev/console) 2>&1
+echo "$(date) starting rc-local script" >> $LOGFILE
+# rc.local
+#
+# This script is executed at the end of each multiuser runlevel.
+# Make sure that the script will "exit 0" on success or any other
+# value on error.
+#
+# In order to enable or disable this script just change the execution
+# bits.
+#
+# By default this script does nothing.
+#
+# After a shutdown operation, an EBS-backed server can be restarted, but it's local NAT IP will change
+# These commands will restore the current default config files and populate them with the correct local IP
+# These commands also allow you update config files in the S3 bootstrap bucket and deploy wth a simple restart command.
+#
+# Commands that are left commented out are for use with a server configured for full-time use. See 
+# http://wiki.cloudcontrollers.com for more details
+#
+. /usr/local/etc/env.conf
+#echo "confirming ebs attachment and mounting of web root is complete before starting rc.local"
+#mount /dev/sdf /opt/data
+#	until df | grep "/dev/sdf"; do 
+#	echo "attempting to mount ebs volumes"
+#	sleep 2; 
+#done
+#echo "confirming ebs attachment and mounting of alfresco data is complete before starting rc.local"
+#mount /dev/sdg /opt/data1
+#	until df | grep "/dev/sdg"; do 
+#	echo "attempting to mount ebs volumes"
+#	sleep 2; 
+#done
+#echo "confirming ebs attachment and mounting of mysql data is complete before starting rc.local" >> $LOGFILE
+#mount /dev/sdh /opt/data2
+#	until df | grep "/dev/sdh"; do 
+#	echo "attempting to mount ebs volume sdh" >> $LOGFILE
+#	sleep 2; 
+#done
+s3cmd --config /root/.s3cfg get --force s3://bootstrap.cloudcontrollers.com/$SERVER/$ENVIRONMENT/etc/authbind/byuid/110 /etc/authbind/byuid/110
+s3cmd --config /root/.s3cfg get --force s3://bootstrap.cloudcontrollers.com/$SERVER/$ENVIRONMENT/etc/apache2/conf.d/proxy_ajp /etc/apache2/conf.d/proxy_ajp
+s3cmd --config /root/.s3cfg get --force s3://bootstrap.cloudcontrollers.com/$SERVER/$ENVIRONMENT/etc/apache2/sites-available/default-ssl /etc/apache2/sites-available/default-ssl
+# s3cmd --config /root/.s3cfg get --force  s3://bootstrap.cloudcontrollers.com/$SERVER/$ENVIRONMENT/var/lib/tomcat7/shared/classes/alfresco-global.properties  /var/lib/tomcat7/shared/classes/alfresco-global.properties
+echo "Writing localip to key config files" >> $LOGFILE
+/usr/bin/python /usr/local/sbin/${SERVER}_scripts/edit-local-ip.py
+sleep 2
+echo "Writing primary hostname to key config files" >> $LOGFILE
+/usr/bin/python /usr/local/sbin/${SERVER}_scripts/edit-hostname.py
+sleep 2
+echo "Setting hostname"
+echo -e "$LOCAL_IPV4 $HOSTNAME \n127.0.0.1 localhost"  > /etc/hosts
+echo $HOSTNAME > /etc/hostname
+hostname $HOSTNAME
+echo "Applying static EIP to server, if applicable" >> $LOGFILE
+/usr/local/sbin/eip.sh
+sleep 2
+echo "Restarting apache" >> $LOGFILE
+service apache2 restart
+echo "exiting rc.local" >> $LOGFILE
+sleep 180
+echo "grab all of our share add-ons- we have to wait 3 minutes because the .war files need to be exploded first (and this might be the first boot)"
+s3cmd --config /root/.s3cfg get --force --recursive s3://bootstrap.cloudcontrollers.com/$SERVER/$ENVIRONMENT/var/lib/tomcat7/web-server/webapps/share/WEB-INF/lib/  /var/lib/tomcat7/web-server/webapps/share/WEB-INF/lib/
+s3cmd --config /root/.s3cfg get --force --recursive s3://bootstrap.cloudcontrollers.com/$SERVER/$ENVIRONMENT/var/lib/tomcat7/web-server/webapps/alfresco/WEB-INF/  /var/lib/tomcat7/web-server/webapps/alfresco/WEB-INF/lib/
+echo "Restarting tomcat7 again to load the new addons" >> $LOGFILE
+service tomcat7 restart
+exit

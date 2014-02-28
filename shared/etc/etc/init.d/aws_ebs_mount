@@ -1,0 +1,59 @@
+#! /bin/sh
+
+# BEGIN INIT INFO
+# Provides:          aws_ebs_mount -o noatime
+# Required-Start:    $networking 
+# Required-Stop: 	 $networking
+# Default-Start:     2 3 4 5 
+# Default-Stop: 	 0 1 6
+# Short-Description: mount -o noatime amazon elastic block volumes, destroy them at stop
+# END INIT INFO
+
+# Cloud Controllers thanks Oliver Weichhold for sharing the scripts that
+# automatically mount -o noatime ebs volumes at startup on the AWS forums at
+# http://developer.amazonwebservices.com/connect/thread.jspa?messageID=99100
+#
+# this is the debian/ubuntu version of the script - copy to init.d and 
+# then run update-rc.d  aws_ebs_mount defaults 98
+# 
+
+# Load the $VOL environment variables created at launch
+. /usr/local/etc/env.conf
+
+# Carry out specific functions when asked to by the system
+case "$1" in
+  start)
+  	echo "waiting for networking"
+  	perl -MIO::Socket::INET -e 'until(new IO::Socket::INET("169.254.169.254:80")){sleep 1}' 
+    echo "Mounting Elastic Block Store Volumes."
+   /usr/local/sbin/mount_ebs_volume.py mount $VOL1 /dev/xvdf xfs /opt/data
+   /usr/local/sbin/mount_ebs_volume.py mount $VOL2 /dev/xvdg xfs /opt/data1
+   /usr/local/sbin/mount_ebs_volume.py mount $VOL3 /dev/xvdh xfs /opt/data2
+   /usr/local/sbin/mount_ebs_volume.py mount $VOL4 /dev/xvdi xfs /opt/data3
+   /usr/local/sbin/mount_ebs_volume.py mount $VOL5 /dev/xvdj xfs /opt/data4
+   /usr/local/sbin/mount_ebs_volume.py mount $VOL6 /dev/xvdk xfs /opt/data5
+   /usr/local/sbin/mount_ebs_volume.py mount $VOL7 /dev/xvdl xfs /opt/data6
+   /usr/local/sbin/mount_ebs_volume.py mount $VOL8 /dev/xvdm xfs /opt/data7
+   /usr/local/sbin/mount_ebs_volume.py mount $VOL9 /dev/xvdn xfs /opt/data8
+   /usr/local/sbin/mount_ebs_volume.py mount $VOL10 /dev/xvdo xfs /opt/data9
+   /usr/local/sbin/mount_ebs_volume.py mount $VOL11 /dev/xvdp xfs /opt/data10
+    ;;
+
+  stop)
+    echo "Unmounting and detaching Elastic Block Store Volumes."
+   /usr/local/sbin/mount_ebs_volume.py unmount $VOL1 /dev/xvdf xfs /opt/data
+   /usr/local/sbin/mount_ebs_volume.py unmount $VOL2 /dev/xvdg xfs /opt/data1
+   /usr/local/sbin/mount_ebs_volume.py unmount $VOL3 /dev/xvdh xfs /opt/data2
+   /usr/local/sbin/mount_ebs_volume.py unmount $VOL4 /dev/xvdi xfs /opt/data3
+   /usr/local/sbin/mount_ebs_volume.py unmount $VOL5 /dev/xvdj xfs /opt/data4
+   /usr/local/sbin/mount_ebs_volume.py unmount $VOL6 /dev/xvdk xfs /opt/data5
+   /usr/local/sbin/mount_ebs_volume.py unmount $VOL7 /dev/xvdl xfs /opt/data6
+   /usr/local/sbin/mount_ebs_volume.py unmount $VOL8 /dev/xvdm xfs /opt/data7
+   /usr/local/sbin/mount_ebs_volume.py unmount $VOL9 /dev/xvdn xfs /opt/data8
+   /usr/local/sbin/mount_ebs_volume.py unmount $VOL10 /dev/xvdo xfs /opt/data9
+   /usr/local/sbin/mount_ebs_volume.py unmount $VOL11 /dev/xvdp xfs /opt/data10
+    ;;
+esac
+
+exit 0
+
