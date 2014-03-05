@@ -1,0 +1,17 @@
+LABEL=cloudimg-rootfs	/	 ext4	defaults	0 0
+/dev/xvdb	/mnt	auto	defaults,nobootwait,comment=cloudconfig	0	2
+/dev/xvda3	none	swap	sw,comment=cloudconfig	0	0
+
+# Placeholders for EBS Volume device IDs
+
+#/dev/xvdf /opt/data xfs noatime 0 0
+#/dev/xvdg /opt/data1 xfs noatime 0 0
+#/dev/xvdh /opt/data2 xfs noatime 0 0
+#/dev/xvdi /opt/data3 xfs noatime 0 0
+#/dev/xvdj /opt/data4 xfs noatime 0 0
+#/dev/xvdk /opt/data5 xfs noatime 0 0
+#/dev/xvdl /opt/data6 xfs noatime 0 0
+#/dev/xvdm /opt/data7 xfs noatime 0 0
+#/dev/xvdn /opt/data8 xfs noatime 0 0
+#/dev/xvdo /opt/data9 xfs noatime 0 0
+#/dev/xvdp /opt/data10 xfs noatime 0 0

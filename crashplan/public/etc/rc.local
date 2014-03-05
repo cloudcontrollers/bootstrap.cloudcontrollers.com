@@ -1,0 +1,48 @@
+#!/bin/bash
+set -x
+#
+# rc.local
+#
+# This script is executed at the end of each multiuser runlevel.
+# Make sure that the script will "exit 0" on success or any other
+# value on error.
+#
+# In order to enable or disable this script just change the execution
+# bits.
+#
+# By default this script does nothing.
+#
+# After a shutdown operation, an EBS-backed server can be restarted, but it's local NAT IP will change
+# These commands will restore the current default config files and populate them with the correct local IP
+# These commands also allow you update config files in the S3 bootstrap bucket and deploy wth a simple restart command.
+#
+. /usr/local/etc/env.conf
+LOGFILE="/var/log/rc-local.log"
+exec > >(tee /var/log/rc-local.log|logger -t rc-local -s 2>/dev/console) 2>&1
+echo "$(date) starting rc-local script" >> $LOGFILE
+
+#echo "confirming ebs attachment is complete before starting rc.local"
+#	until df | grep "/dev/xvdg"; do 
+#	echo "waiting for ebs volumes"
+#	sleep 2; 
+#done
+
+echo "Downloading most recent apache config files - you probably want to disable this and edit-hostname.py below if you have customized apache webroot" >> $LOGFILE
+s3cmd --config /root/.s3cfg get --force s3://$S3_BUCKET/$SERVER/$ENVIRONMENT/etc/apache2/sites-available/default /etc/apache2/sites-available/default
+
+echo "Writing primary hostname to key config files" >> $LOGFILE
+/usr/bin/python /usr/local/sbin/${SERVER}_scripts/edit-hostname.py
+sleep 2
+
+echo "Setting hostname"  >> $LOGFILE
+echo -e "$LOCAL_IPV4 $HOSTNAME \n127.0.0.1 localhost"  > /etc/hosts
+echo $HOSTNAME > /etc/hostname
+hostname $HOSTNAME
+
+echo "Applying static EIP to server, if applicable" >> $LOGFILE
+/usr/local/sbin/eip.sh
+sleep 2
+
+echo "Restarting apache" >> $LOGFILE
+service apache2 restart
+exit 0
